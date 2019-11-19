@@ -1,6 +1,6 @@
 import os
 import numpy as np
-import torch
+import torch, PIL
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.models as models
@@ -15,8 +15,40 @@ from sklearn.preprocessing import OneHotEncoder, LabelEncoder
 from sklearn.metrics import accuracy_score
 import pickle
 
+print("PyTorch Version: ",torch.__version__)
+print("Torchvision Version: ",torchvision.__version__)
+print("Pillow Version: ", PIL.PILLOW_VERSION)
+
+import argparse
+import pprint
+_utils_pp = pprint.PrettyPrinter()
+def pprint(x):
+    _utils_pp.pprint(x)
+    
+    
+parser = argparse.ArgumentParser()
+# parser.add_argument('--gpu', default="0,1,2,3")
+# parser.add_argument('--gpu', default="4,5,6,7")
+parser.add_argument('--gpu', default="0,1")
+# parser.add_argument('--gpu', default="0,2")
+# parser.add_argument('--gpu', default="2,3")
+parser.add_argument('--batch_size', type=int, default=30)
+parser.add_argument('--num_workers', type=int, default=8)
+# parser.add_argument('--milestones', default = [15,18,20])
+parser.add_argument('--milestones', default = [25, 28, 30])
+
+
+args = parser.parse_args()
+pprint(vars(args))
+
+os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu
+# os.environ["CUDA_LAUNCH_BLOCKING"] = '1'
+assert torch.cuda.is_available()
+
+print("Let's use", torch.cuda.device_count(), "GPUs!")
+
 # set path
-data_path = "./jpegs_256/"    # define UCF-101 RGB data path
+data_path = "../jpegs_256/"    # define UCF-101 RGB data path
 action_name_path = './UCF101actions.pkl'
 save_model_path = "./CRNN_ckpt/"
 
@@ -34,7 +66,7 @@ RNN_FC_dim = 256
 # training parameters
 k = 101             # number of target category
 epochs = 120        # training epochs
-batch_size = 30  
+
 learning_rate = 1e-4
 log_interval = 10   # interval for displaying training info
 
@@ -127,7 +159,7 @@ use_cuda = torch.cuda.is_available()                   # check if GPU exists
 device = torch.device("cuda" if use_cuda else "cpu")   # use CPU or GPU
 
 # Data loading parameters
-params = {'batch_size': batch_size, 'shuffle': True, 'num_workers': 4, 'pin_memory': True} if use_cuda else {}
+params = {'batch_size': args.batch_size, 'shuffle': True, 'num_workers': args.num_workers, 'pin_memory': True} if use_cuda else {}
 
 # load UCF101 actions names
 with open(action_name_path, 'rb') as f:
